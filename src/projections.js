@@ -36,6 +36,12 @@ function inverseWebMercator([x, y]) {
   return [lon, lat];
 }
 
+/**
+ * Converte coordenadas UTM (zona sul) para coordenadas WGS84.
+ * @param {*} param0 - Array com easting e northing.
+ * @param {*} zone - Número da zona UTM.
+ * @returns {Array} Coordenadas WGS84 [longitude, latitude].
+ */
 function inverseUtmSouth([easting, northing], zone) {
   const x = easting - 500000;
   const y = northing - 10000000;
@@ -77,6 +83,12 @@ function inverseUtmSouth([easting, northing], zone) {
   ];
 }
 
+/**
+ * Converte coordenadas para WGS84.
+ * @param {*} coordinate - Array com coordenadas.
+ * @param {*} sourceProjection - Código da projeção de origem.
+ * @returns {Array} Coordenadas WGS84 [longitude, latitude].
+ */
 function coordinateToWgs84(coordinate, sourceProjection) {
   if (!Array.isArray(coordinate) || coordinate.length < 2) return coordinate;
 

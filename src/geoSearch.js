@@ -4,6 +4,12 @@ function toRadians(value) {
   return value * Math.PI / 180;
 }
 
+/**
+ * Calcula a distância em quilômetros entre dois pontos geográficos usando a fórmula de Haversine.
+ * @param {*} a - Objeto com propriedades lat e lon.
+ * @param {*} b - Objeto com propriedades lat e lon.
+ * @returns {number} A distância em quilômetros.
+ */
 function haversineDistanceKm(a, b) {
   const lat1 = toRadians(a.lat);
   const lat2 = toRadians(b.lat);
@@ -15,6 +21,11 @@ function haversineDistanceKm(a, b) {
   return 2 * EARTH_RADIUS_KM * Math.atan2(Math.sqrt(h), Math.sqrt(1 - h));
 }
 
+/**
+ * Converte um array de coordenadas em um objeto de ponto.
+ * @param {*} coordinate - Array com longitude e latitude.
+ * @returns {Object|null} Objeto com propriedades lat e lon, ou null se inválido.
+ */
 function coordinateToPoint(coordinate) {
   if (!Array.isArray(coordinate) || coordinate.length < 2) return null;
   return {

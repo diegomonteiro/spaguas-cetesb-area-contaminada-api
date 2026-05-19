@@ -103,8 +103,8 @@ export function requireApiToken(req, res, next) {
   const client = getApiClientByToken(token);
 
   if (!client) {
-    res.locals.logMessage = 'Token invalido.';
-    return res.status(401).json({ error: 'Token de API invalido.' });
+    res.locals.logMessage = 'Token inválido.';
+    return res.status(401).json({ error: 'Token de API inválido.' });
   }
 
   if (!client.isActive) {
