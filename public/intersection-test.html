@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Teste de Intersecção</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+  <link rel="stylesheet" href="/intersection-test.css">
+</head>
+<body>
+  <main class="app">
+    <aside class="sidebar">
+      <header>
+        <h1>Teste de Intersecção</h1>
+        <a href="/admin">Admin</a>
+      </header>
+
+      <form id="searchForm">
+        <label for="apiToken">Token da API</label>
+        <input id="apiToken" name="apiToken" type="password" autocomplete="off" placeholder="Bearer token" required>
+
+        <label for="dataset">Dataset</label>
+        <select id="dataset" name="dataset" required></select>
+
+        <div class="grid">
+          <div>
+            <label for="lat">Latitude</label>
+            <input id="lat" name="lat" type="number" step="any" required>
+          </div>
+          <div>
+            <label for="lon">Longitude</label>
+            <input id="lon" name="lon" type="number" step="any" required>
+          </div>
+        </div>
+
+        <label for="radiusKm">Raio do ponto de contaminacao (km)</label>
+        <input id="radiusKm" name="radiusKm" type="number" step="0.1" min="0" value="0.5" required>
+
+        <fieldset class="classification-filter">
+          <legend>Classificacao</legend>
+          <label>
+            <input type="checkbox" name="classification" value="Área Reabilitada para o Uso Declarado (AR)" checked>
+            <span class="swatch ar"></span>
+            AR
+          </label>
+          <label>
+            <input type="checkbox" name="classification" value="Área em processo de remediação (ACRe)" checked>
+            <span class="swatch acre"></span>
+            ACRe
+          </label>
+          <label>
+            <input type="checkbox" name="classification" value="Área em processo de monitoramento para encerramento (AME)" checked>
+            <span class="swatch ame"></span>
+            AME
+          </label>
+          <label>
+            <input type="checkbox" name="classification" value="Área contaminada sob investigação (ACI)" checked>
+            <span class="swatch aci"></span>
+            ACI
+          </label>
+          <label>
+            <input type="checkbox" name="classification" value="Área contaminada em processo de reutilização (ACRu)" checked>
+            <span class="swatch acru"></span>
+            ACRu
+          </label>
+          <label>
+            <input type="checkbox" name="classification" value="Área Contaminada com Risco Confirmado (ACRi)" checked>
+            <span class="swatch acri"></span>
+            ACRi
+          </label>
+        </fieldset>
+
+        <button type="submit">Testar intersecao</button>
+      </form>
+
+      <section class="summary" aria-live="polite">
+        <div>
+          <span>Total</span>
+          <strong id="count">0</strong>
+        </div>
+        <div>
+          <span>Raio</span>
+          <strong id="radiusLabel">0.5 km</strong>
+        </div>
+        <div id="touchAlert" class="touch-status clear">
+          <span>Contaminação</span>
+          <strong>Não</strong>
+        </div>
+      </section>
+
+      <section>
+        <h2>Localizadas</h2>
+        <ol id="results" class="results"></ol>
+      </section>
+    </aside>
+
+    <section class="map-panel">
+      <div id="map"></div>
+    </section>
+  </main>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="/intersection-test.js" type="module"></script>
+</body>
+</html>
