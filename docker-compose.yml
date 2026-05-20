@@ -1,0 +1,23 @@
+services:
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: spaguas-cetesb-area-contaminada-api:latest
+    container_name: spaguas-cetesb-area-contaminada-api
+    init: true
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+    ports:
+      - "${APP_PORT:-3000}:3000"
+    volumes:
+      - app_data:/app/data
+      - app_uploads:/app/uploads
+
+volumes:
+  app_data:
+  app_uploads:

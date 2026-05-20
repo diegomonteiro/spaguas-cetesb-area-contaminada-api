@@ -31,6 +31,7 @@ As variáveis de ambiente ficam em `.env`:
 
 ```env
 PORT=3000
+APP_PORT=3000
 SESSION_SECRET=troque-este-segredo
 ADMIN_USER=admin
 ADMIN_PASSWORD=admin123
@@ -45,8 +46,53 @@ Variáveis obrigatórias:
 
 Variáveis opcionais:
 
-- `PORT`: porta HTTP. Padrão: `3000`.
+- `PORT`: porta HTTP usada pela aplicação fora do Docker. Padrão: `3000`.
+- `APP_PORT`: porta exposta no host pelo Docker Compose. Padrão: `3000`.
 - `MAX_UPLOAD_MB`: tamanho máximo do ZIP enviado. Padrão: `100`.
+
+## Docker
+
+O projeto inclui `Dockerfile`, `.dockerignore` e `docker-compose.yml`.
+
+Para subir a aplicação com Docker Compose:
+
+```bash
+cp .env.example .env
+docker compose up -d --build
+```
+
+Por padrão, a aplicação fica disponível em:
+
+- <http://localhost:3000/admin>
+- <http://localhost:3000/intersection-test.html>
+- <http://localhost:3000/api-docs>
+
+Para usar outra porta no host, ajuste `APP_PORT` no `.env`:
+
+```env
+APP_PORT=8080
+```
+
+O container sempre executa a aplicação internamente na porta `3000`; o Compose faz o mapeamento `${APP_PORT:-3000}:3000`.
+
+Comandos úteis:
+
+```bash
+docker compose logs -f api
+docker compose restart api
+docker compose down
+```
+
+Os dados persistem em volumes nomeados:
+
+- `app_data`: SQLite, índice de datasets e GeoJSON processados.
+- `app_uploads`: arquivos temporários de upload.
+
+Para remover também os volumes de dados:
+
+```bash
+docker compose down -v
+```
 
 ## Acessos
 
