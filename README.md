@@ -1,13 +1,15 @@
 # SPÁguas CETESB - Áreas Contaminadas API
 
-Projeto Node.js com área administrativa protegida por usuário e senha via `.env` para upload de shapefile compactado em `.zip`, processamento para GeoJSON e exposição dos dados por API HTTP.
+API Node.js para publicar datasets GeoJSON gerados a partir de shapefiles da CETESB, consultar features e executar busca espacial por coordenada e raio. O projeto também inclui uma área administrativa protegida por login para upload de shapefiles, gestão de datasets, emissão de tokens de API e acompanhamento de logs.
 
 ## Requisitos
 
 - Node.js 18+
-- Um shapefile em `.zip` contendo pelo menos o arquivo `.shp`. Para atributos, inclua também o `.dbf`.
+- npm
+- Shapefile compactado em `.zip` contendo pelo menos o arquivo `.shp`
+- Para importar atributos, inclua também o `.dbf` correspondente ao `.shp`
 
-## Configuração
+## Instalação e execução
 
 ```bash
 cp .env.example .env
@@ -15,58 +17,117 @@ npm install
 npm start
 ```
 
-Em desenvolvimento, use nodemon:
+Em desenvolvimento, use:
 
 ```bash
 npm run dev
 ```
 
-Acesse:
+O `nodemon` observa `src` e `public`, com extensões `js`, `json`, `css` e `html`, ignorando `data`, `uploads` e `node_modules`.
 
-- [Área administrativa](http://localhost:3000/admin)
-- [Interface gráfica de teste de interseção](http://localhost:3000/intersection-test.html)
-- [Swagger/OpenAPI](http://localhost:3000/api-docs)
-- [Swagger/OpenAPI alias](http://localhost:3000/docs)
-- [OpenAPI JSON](http://localhost:3000/api/openapi.json)
+## Configuração
 
-As credenciais vêm de:
+As variáveis de ambiente ficam em `.env`:
 
-- `ADMIN_USER`
-- `ADMIN_PASSWORD`
+```env
+PORT=3000
+SESSION_SECRET=troque-este-segredo
+ADMIN_USER=admin
+ADMIN_PASSWORD=admin123
+MAX_UPLOAD_MB=100
+```
 
-## Upload
+Variáveis obrigatórias:
 
-Na área administrativa, envie um arquivo `.zip` contendo os arquivos do shapefile (`.shp`, `.dbf`, `.shx`, `.prj`, etc.). O sistema converte o shapefile para GeoJSON e salva o dataset em `data/datasets`.
+- `SESSION_SECRET`: segredo usado pela sessão administrativa.
+- `ADMIN_USER`: usuário da área administrativa.
+- `ADMIN_PASSWORD`: senha da área administrativa.
 
-Durante o upload é possível customizar:
+Variáveis opcionais:
 
-- `Nome do dataset`: nome público exibido na administração e retornado pela API.
-- `Nome do arquivo GeoJSON`: nome usado para salvar o arquivo em `data/datasets/<nome>.geojson`; ele também vira o `id` do dataset na API.
-- `Projeção de origem`: sistema de coordenadas do shapefile enviado.
-- `Projeção de saída`: manter as coordenadas originais ou converter para `EPSG:4326`.
+- `PORT`: porta HTTP. Padrão: `3000`.
+- `MAX_UPLOAD_MB`: tamanho máximo do ZIP enviado. Padrão: `100`.
 
-Depois de publicado, o dataset pode ser editado ou excluído pela área administrativa. A edição permite alterar nome, nome do arquivo/id e metadados de projeção; a exclusão remove o metadado e o arquivo GeoJSON associado.
+## Acessos
 
-Projeções suportadas no formulário:
+Com o servidor iniciado:
+
+- Área administrativa: <http://localhost:3000/admin>
+- Teste visual de interseção: <http://localhost:3000/intersection-test.html>
+- Swagger/OpenAPI: <http://localhost:3000/api-docs>
+- Alias da documentação: <http://localhost:3000/docs>
+- OpenAPI JSON: <http://localhost:3000/api/openapi.json>
+
+`/` redireciona para `/admin`. `/api-docs` e `/docs` redirecionam para `/swagger.html`.
+
+## Área administrativa
+
+A área administrativa permite:
+
+- Enviar shapefile compactado em `.zip`.
+- Definir nome público do dataset.
+- Definir nome do arquivo GeoJSON, usado também como `id` do dataset na API.
+- Informar projeção de origem do shapefile.
+- Manter coordenadas originais ou converter a saída para `EPSG:4326`.
+- Editar nome, arquivo/id e metadados de projeção de datasets publicados.
+- Excluir datasets e seus arquivos GeoJSON.
+- Criar, ativar/desativar e remover tokens de API.
+- Configurar expiração em dias, limite de requests por segundo e cooldown mínimo por token.
+- Visualizar logs de chamadas da API com paginação, ordenação e atualização automática.
+
+O token completo aparece somente no momento da criação. Depois disso, apenas o hash SHA-256 e uma prévia do token ficam armazenados no SQLite local.
+
+## Upload e projeções
+
+Envie um `.zip` com os arquivos do shapefile (`.shp`, `.dbf`, `.shx`, `.prj`, etc.). O sistema extrai o ZIP, localiza o primeiro `.shp`, lê o `.dbf` de mesmo nome quando existir, converte para GeoJSON e salva em `data/datasets/<id>.geojson`.
+
+Projeções aceitas como origem:
 
 - Coordenadas originais
+- `EPSG:4326` - WGS 84 latitude/longitude
+- `EPSG:4674` - SIRGAS 2000 latitude/longitude
+- `EPSG:31982` - SIRGAS 2000 / UTM zona 22S
+- `EPSG:31983` - SIRGAS 2000 / UTM zona 23S
+- `EPSG:3857` - Web Mercator
+
+Projeções aceitas como saída:
+
+- Coordenadas da origem
 - `EPSG:4326`
-- `EPSG:4674`
-- `EPSG:31982`
-- `EPSG:31983`
-- `EPSG:3857`
 
-## API
+Para converter a saída para `EPSG:4326`, a projeção de origem precisa ser selecionada explicitamente. A busca por interseção exige dataset em latitude/longitude, ou seja, saída `EPSG:4326` ou origem `EPSG:4326`/`EPSG:4674`. Datasets antigos sem metadados de projeção são tratados como latitude/longitude por compatibilidade.
 
-Os endpoints da API exigem token Bearer, exceto `GET /api/openapi.json`.
+## Autenticação da API
+
+Todos os endpoints em `/api`, exceto `GET /api/openapi.json`, exigem token de API.
+
+Formatos aceitos:
 
 ```http
 Authorization: Bearer seu-token
 ```
 
-Também é aceito o header `X-API-Token`.
+```http
+X-API-Token: seu-token
+```
 
-Os tokens são cadastrados na área administrativa, com timeout/expiração em dias, limite de requests por segundo, cooldown mínimo entre chamadas, ativação/desativação e logs de uso. O token completo aparece somente no momento da criação; depois o sistema armazena apenas o hash no SQLite local (`data/app.sqlite`).
+Também é aceito `?token=seu-token` na query string. Esse parâmetro é removido dos caminhos gravados nos logs.
+
+Possíveis respostas de segurança:
+
+- `401`: token ausente, inválido ou expirado.
+- `403`: token inativo.
+- `429`: limite por segundo ou cooldown excedido. A resposta inclui `Retry-After`.
+
+## Endpoints
+
+### Documentação OpenAPI
+
+```http
+GET /api/openapi.json
+```
+
+Este endpoint é público.
 
 ### Listar datasets
 
@@ -74,66 +135,107 @@ Os tokens são cadastrados na área administrativa, com timeout/expiração em d
 GET /api/datasets
 ```
 
+Retorna a lista de datasets publicados. O dataset mais recente fica no início da lista.
+
 ### Detalhar dataset
 
 ```http
 GET /api/datasets/:id
-```
-
-### Detalhar dataset mais recente
-
-```http
 GET /api/datasets/latest
 ```
 
-### Listar features de um dataset
+Retorna os metadados do dataset:
+
+- `id`
+- `name`
+- `fileName`
+- `originalName`
+- `uploadedAt`
+- `sourceProjection`
+- `outputProjection`
+- `featureCount`
+
+### Listar features
 
 ```http
 GET /api/datasets/:id/features?limit=100&offset=0
-```
-
-### Listar features do dataset mais recente
-
-```http
 GET /api/datasets/latest/features?limit=100&offset=0
 ```
+
+Parâmetros:
+
+- `limit`: quantidade de features retornadas. Padrão: `100`; máximo: `5000`.
+- `offset`: deslocamento inicial. Padrão: `0`.
+
+A resposta é uma `FeatureCollection` GeoJSON com `metadata` contendo dataset, total, limite, offset e quantidade retornada.
 
 ### Buscar interseções por coordenada e raio
 
 ```http
 GET /api/datasets/:id/intersections?lat=-23.55052&lon=-46.63331&radiusKm=0.5
-```
-
-Também é possível buscar no dataset mais recente:
-
-```http
 GET /api/datasets/latest/intersections?lat=-23.55052&lon=-46.63331&radiusKm=0.5
 ```
 
 Parâmetros:
 
-- `lat`: latitude do ponto central.
-- `lon`: longitude do ponto central. `lng` também é aceito.
-- `radiusKm`: distância máxima em quilômetros entre a coordenada informada e o ponto de origem da contaminação. `radius` também é aceito. Quando omitido, o padrão é `0.5` km (500m).
-- `classification`: filtro opcional por classificação. Pode ser repetido para múltiplas classificações.
-- `classifications`: alternativa opcional com múltiplas classificações separadas por vírgula.
+- `lat`: latitude do ponto central, entre `-90` e `90`.
+- `lon`: longitude do ponto central, entre `-180` e `180`. O alias `lng` também é aceito.
+- `radiusKm`: raio em quilômetros. Padrão: `0.5`. O alias `radius` também é aceito.
+- `classification`: filtro opcional por classificação. Pode ser repetido.
+- `classifications`: alternativa com múltiplas classificações separadas por vírgula.
+- `classifica`: alias aceito para filtros de classificação.
 
-Exemplo com filtro múltiplo:
+Exemplo com múltiplas classificações:
 
 ```http
-GET /api/datasets/:id/intersections?lat=-23.55052&lon=-46.63331&radiusKm=0.5&classification=Área%20contaminada%20sob%20investigação%20(ACI)&classification=Área%20Contaminada%20com%20Risco%20Confirmado%20(ACRi)
+GET /api/datasets/latest/intersections?lat=-23.55052&lon=-46.63331&radiusKm=0.5&classification=Área%20contaminada%20sob%20investigação%20(ACI)&classification=Área%20Contaminada%20com%20Risco%20Confirmado%20(ACRi)
 ```
 
-A resposta retorna `touchedContaminatedArea`, `count` e `items`. A flag `touchedContaminatedArea` fica `true` quando a coordenada informada está a menos do que o raio configurado do ponto de origem de pelo menos uma contaminação. Cada item contém `distanceKm`, `nearestPoint`, `contaminationPoint` e a `feature` GeoJSON completa localizada. O campo `distanceKm` é calculado entre a coordenada informada e `contaminationPoint`; `nearestPoint` é mantido compatível com esse mesmo ponto.
+A resposta inclui:
 
-Essa busca exige dados em latitude/longitude. Ao publicar o shapefile, use saída `EPSG:4326`, ou mantenha origem `EPSG:4326`/`EPSG:4674`. Datasets antigos sem metadados de projeção são tratados como latitude/longitude para manter compatibilidade.
+- `metadata.dataset`: resumo do dataset pesquisado.
+- `metadata.center`: coordenada pesquisada.
+- `metadata.radiusKm`: raio aplicado.
+- `metadata.radiusOrigin`: atualmente `contamination`.
+- `metadata.classifications`: filtros aplicados.
+- `touchedContaminatedArea`: `true` quando há pelo menos uma contaminação dentro do raio.
+- `count`: quantidade de itens encontrados.
+- `items`: lista ordenada por distância.
 
-As respostas de features usam `FeatureCollection` GeoJSON.
+Cada item contém:
 
-## Estrutura de armazenamento
+- `distanceKm`: distância em quilômetros.
+- `nearestPoint`: ponto usado para compatibilidade com respostas anteriores.
+- `contaminationPoint`: ponto de origem/representativo da contaminação.
+- `feature`: feature GeoJSON completa.
 
-- `uploads/`: arquivos enviados temporariamente.
-- `data/datasets/index.json`: metadados dos datasets processados.
-- `data/datasets/<id>.geojson`: dados processados em GeoJSON.
+A busca calcula a distância até o ponto de origem/representativo da geometria. Para pontos e multipontos, usa as coordenadas da própria geometria. Para linhas e polígonos, usa um ponto representativo derivado das coordenadas.
 
-Esses diretórios são criados automaticamente em runtime e ficam fora do versionamento.
+## Interface de teste de interseção
+
+A página `/intersection-test.html` oferece um mapa com Leaflet/OpenStreetMap para testar a busca por raio. Informe um token de API, escolha o dataset, latitude, longitude, raio e filtros de classificação. O resultado destaca as features encontradas no mapa e lista os detalhes principais.
+
+## Armazenamento
+
+Diretórios e arquivos criados em runtime:
+
+- `uploads/`: arquivos enviados temporariamente pelo `multer`.
+- `data/app.sqlite`: banco SQLite com tokens e logs da API.
+- `data/app.sqlite-wal` e `data/app.sqlite-shm`: arquivos auxiliares do SQLite em modo WAL.
+- `data/datasets/index.json`: metadados dos datasets publicados.
+- `data/datasets/<id>.geojson`: datasets processados em GeoJSON.
+
+Esses diretórios ficam fora do versionamento e são criados automaticamente quando a aplicação inicia.
+
+## Scripts
+
+- `npm start`: inicia `node src/server.js`.
+- `npm run dev`: inicia o servidor com `nodemon`.
+
+## Observações operacionais
+
+- O nome do arquivo informado no upload é normalizado com `slugify` e vira o `id` do dataset.
+- Não é permitido publicar dois datasets com o mesmo `id`.
+- Ao editar o nome do arquivo/id, o arquivo GeoJSON correspondente é renomeado.
+- Ao excluir um dataset, o metadado e o arquivo GeoJSON associado são removidos.
+- Os logs registram método, rota, status, duração, IP, user agent, cliente/token quando identificado e mensagem de erro operacional quando aplicável.
